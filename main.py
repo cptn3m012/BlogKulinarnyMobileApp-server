@@ -114,15 +114,6 @@ def loadRecipes():
                     "CategoryId": category_id
                 }
 
-            if category_id is not None:
-                category = {
-                    "id": category_id,
-                    "name": category_name
-                }
-
-        if recipe is not None:
-            recipes.append(recipe)
-
         conn.close()
         return jsonify({'recipes': recipes}), 200
     except Exception as e:
