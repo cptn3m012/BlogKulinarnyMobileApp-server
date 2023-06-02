@@ -87,8 +87,7 @@ def loadRecipes():
 
     try:
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM [recipes] AS [r] WHERE [r].[isAccepted] = 1")
+        cursor.execute("SELECT * FROM [recipes] AS [r] WHERE [r].[isAccepted] = 1")
 
         recipes = []
         current_recipe_id = None
@@ -114,13 +113,15 @@ def loadRecipes():
                     "CategoryId": category_id
                 }
 
+        if recipe is not None:
+            recipes.append(recipe)
+
         conn.close()
         return jsonify({'recipes': recipes}), 200
     except Exception as e:
         print(e)
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
-
 
 #main
 if __name__ == '__main__':
