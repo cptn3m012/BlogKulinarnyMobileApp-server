@@ -1,7 +1,15 @@
 from flask import Flask, request, jsonify
 import pyodbc
+import hashlib
 
 app = Flask(__name__)
+
+
+# Funkcja do haszowania hasła
+def HashPassword(password):
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    return hashed_password
+
 
 # Endpoint logowania
 @app.route('/login', methods=['POST'])
@@ -18,10 +26,12 @@ def login():
     # Pobranie danych logowania z żądania POST
     username_or_email = request.json['username_or_email']
     password = request.json['password']
+    hashed_password = HashPassword(password)  # Haszowanie hasła
 
     # Sprawdzenie, czy użytkownik istnieje w bazie danych
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Users WHERE (login=? OR mail=?) AND password=?", (username_or_email, username_or_email, password))
+    cursor.execute("SELECT * FROM Users WHERE (login=? OR mail=?) AND password=?",
+                   (username_or_email, username_or_email, hashed_password))
     user = cursor.fetchone()
 
     conn.close()  # Zamknięcie połączenia z bazą danych
@@ -32,6 +42,7 @@ def login():
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
         return jsonify({'success': False}), 401
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -50,6 +61,7 @@ def register():
         mail = data['mail']
         username = data['login']
         password = data['password']
+        hashed_password = HashPassword(password)  # Haszowanie hasła
 
         # Sprawdzenie, czy użytkownik o podanym adresie e-mail lub nazwie użytkownika już istnieje
         cursor = conn.cursor()
@@ -61,7 +73,8 @@ def register():
             return jsonify({'error': 'Użytkownik o podanym adresie e-mail lub nazwie użytkownika już istnieje.'}), 409
 
         # Dodanie nowego użytkownika do bazy danych
-        cursor.execute("INSERT INTO Users (mail, login, password, rank, isAccepted) VALUES (?, ?, ?, ?, ?)", (mail, username, password, 1, 1))
+        cursor.execute("INSERT INTO Users (mail, login, password, rank, isAccepted) VALUES (?, ?, ?, ?, ?)",
+                       (mail, username, hashed_password, 1, 1))
 
         conn.commit()
 
@@ -73,6 +86,7 @@ def register():
         return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
     finally:
         conn.close()  # Zamknięcie połączenia z bazą danych
+
 
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
@@ -123,7 +137,8 @@ def loadRecipes():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
 
-#main
+
+# main
 if __name__ == '__main__':
     # Uruchomienie aplikacji Flask z obsługą HTTP
     app.run(host='0.0.0.0', port=5000)
