@@ -44,6 +44,7 @@ def login():
         return jsonify({'success': False}), 401
 
 
+#Endpoint rejestracji
 @app.route('/register', methods=['POST'])
 def register():
     # Połączenie z bazą danych
@@ -88,6 +89,7 @@ def register():
         conn.close()  # Zamknięcie połączenia z bazą danych
 
 
+#Endpoint pobierania przepisów
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
     # Połączenie z bazą danych
@@ -137,6 +139,120 @@ def loadRecipes():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
 
+
+# Endpoint do resetowania hasła
+@app.route('/resetPassword', methods=['POST'])
+def reset_password():
+    # Pobranie adresu e-mail z ciała żądania
+    email = request.json.get('email')
+
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT TOP(1) [u].[Id], [u].[PasswordResetToken], [u].[ResetTokenExpires], 
+            [u].[VerificationToken], [u].[VerifiedAt], [u].[imageURL], [u].[isAccepted], 
+            [u].[login], [u].[mail], [u].[password], [u].[rank]
+            FROM [users] AS [u]
+            WHERE [u].[mail] = ? """, email)
+
+        row = cursor.fetchone()
+
+        if row:
+            user_id, password_reset_token, reset_token_expires, verification_token, verified_at, image_url, is_accepted, login, mail, password, rank = row
+            # Wygeneruj nowy token resetowania hasła
+            # ...
+
+            # Uaktualnij dane użytkownika w bazie danych
+
+
+            # Wyślij e-mail z linkiem do resetowania hasła
+            # ...
+
+            conn.commit()
+            conn.close()
+            return jsonify({'success': 'Pomyślnie zresetowano hasło.'}), 200
+        else:
+            conn.close()
+            return jsonify({'error': 'Nie znaleziono użytkownika o podanym adresie e-mail.'}), 404
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': 'Wystąpił błąd podczas resetowania hasła.'}), 500
+
+
+# Endpoint do zmiany hasła użytkownika
+@app.route('/changePassword', methods=['POST'])
+def change_password():
+    # Pobranie danych z formularza
+    user_id = request.form.get('userId')
+    old_password = request.form.get('oldPassword')
+    new_password = request.form.get('newPassword')
+    confirm_password = request.form.get('confirmPassword')
+
+    # Sprawdzenie, czy nowe hasło i potwierdzenie hasła są zgodne
+    if new_password != confirm_password:
+        return jsonify({'error': 'Nowe hasło i potwierdzenie hasła nie są zgodne.'}), 400
+
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT TOP(1) [u].[Id], [u].[PasswordResetToken], [u].[ResetTokenExpires],
+            [u].[VerificationToken], [u].[VerifiedAt], [u].[imageURL], [u].[isAccepted],
+            [u].[login], [u].[mail], [u].[password], [u].[rank]
+            FROM [users] AS [u]
+            WHERE [u].[Id] = ?
+        """, user_id)
+
+        row = cursor.fetchone()
+
+        if row:
+            user_id, password_reset_token, reset_token_expires, verification_token, verified_at, image_url, is_accepted, login, mail, password, rank = row
+
+            # Sprawdzenie, czy stare hasło jest poprawne
+            if old_password != password:
+                conn.close()
+                return jsonify({'error': 'Stare hasło jest niepoprawne.'}), 400
+
+            # Edytuj hasło użytkownika
+            # ...
+
+            # Uaktualnij dane użytkownika w bazie danych
+            cursor.execute("""
+                UPDATE [users]
+                SET [password] = ?
+                WHERE [Id] = ?
+            """, new_password, user_id)
+
+            conn.commit()
+            conn.close()
+            return jsonify({'success': 'Pomyślnie zmieniono hasło.'}), 200
+        else:
+            conn.close()
+            return jsonify({'error': 'Nie znaleziono użytkownika o podanym identyfikatorze.'}), 404
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': 'Wystąpił błąd podczas zmiany hasła.'}), 500
 
 # main
 if __name__ == '__main__':
