@@ -1,13 +1,15 @@
 from flask import Flask, request, jsonify
 import pyodbc
 import hashlib
+import base64
 
 app = Flask(__name__)
 
 
 # Funkcja do haszowania hasła
 def HashPassword(password):
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    hashed_bytes = hashlib.sha256(password.encode()).digest()
+    hashed_password = base64.b64encode(hashed_bytes).decode()
     return hashed_password
 
 
@@ -110,8 +112,7 @@ def loadRecipes():
         recipe = None
 
         for row in cursor.fetchall():
-            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, category_id = row
-
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -125,8 +126,7 @@ def loadRecipes():
                     "difficulty": difficulty,
                     "avgTime": avg_time,
                     "portions": portions,
-                    "userId": user_id,
-                    "CategoryId": category_id
+                    "userId": user_id
                 }
 
         if recipe is not None:
