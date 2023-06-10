@@ -105,14 +105,18 @@ def loadRecipes():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM [recipes] AS [r] WHERE [r].[isAccepted] = 1")
+        cursor.execute("SELECT r.id, r.isAccepted, r.title, r.imageURL, r.description, r.difficulty, r.avgTime, \
+                        r.portions, r.userId, re.noOfList, re.imageURL, re.description FROM [recipes] AS [r] \
+                        INNER JOIN [recipesElements] AS [re] ON r.id = re.recipeId \
+                        WHERE [r].[isAccepted] = 1")
 
         recipes = []
         current_recipe_id = None
         recipe = None
 
         for row in cursor.fetchall():
-            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id = row
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list,\
+                step_image_url, step_description = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -126,12 +130,20 @@ def loadRecipes():
                     "difficulty": difficulty,
                     "avgTime": avg_time,
                     "portions": portions,
-                    "userId": user_id
+                    "userId": user_id,
+                    "steps": []
                 }
+
+            recipe["steps"].append({
+                "imageURL": step_image_url,
+                "description": step_description,
+                "noOfList": no_of_list
+            })
 
         if recipe is not None:
             recipes.append(recipe)
 
+        print(recipe)
         conn.close()
         return jsonify({'recipes': recipes}), 200
     except Exception as e:
