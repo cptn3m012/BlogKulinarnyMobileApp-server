@@ -40,13 +40,13 @@ def login():
 
     if user:
         # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
-        return jsonify({'success': True})
+        return jsonify({'result': True, 'user.rank': user.rank})
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
-        return jsonify({'success': False}), 401
+        return jsonify({'result': False}), 401
 
 
-#Endpoint rejestracji
+# Endpoint rejestracji
 @app.route('/register', methods=['POST'])
 def register():
     # Połączenie z bazą danych
@@ -91,7 +91,7 @@ def register():
         conn.close()  # Zamknięcie połączenia z bazą danych
 
 
-#Endpoint pobierania przepisów
+# Endpoint pobierania przepisów
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
     # Połączenie z bazą danych
@@ -115,7 +115,7 @@ def loadRecipes():
         recipe = None
 
         for row in cursor.fetchall():
-            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list,\
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list, \
                 step_image_url, step_description = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
@@ -152,6 +152,80 @@ def loadRecipes():
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
 
 
+# Endpoint pobierania YOUR_LOGIN_HEREow
+@app.route('/loadUsersToAccept', methods=['GET'])
+def loadUsersToAccept():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT [u].[Id], [u].[imageURL], [u].[isAccepted], [u].[login], [u].[mail], [u].[rank] \
+                        FROM [users] AS [u] WHERE [u].[isAccepted] = 0")
+
+        users = []
+
+        for row in cursor.fetchall():
+            user_id, image_url, is_accepted, login, mail, rank = row
+            user = {
+                "id": user_id,
+                "imageURL": image_url,
+                "isAccepted": is_accepted,
+                "login": login,
+                "mail": mail,
+                "rank": rank
+            }
+            users.append(user)
+
+        conn.close()
+        return jsonify({'users': users}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas pobierania danych użytkowników.'}), 500
+
+
+#Endpoint do pobierania kategorii
+@app.route('/loadCategories', methods=['GET'])
+def loadCategories():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT [c].[id], [c].[isAccepted], [c].[name] FROM [categories] AS [c]")
+
+        categories = []
+
+        for row in cursor.fetchall():
+            category_id, is_accepted, name = row
+            category = {
+                "id": category_id,
+                "isAccepted": is_accepted,
+                "name": name
+            }
+            categories.append(category)
+
+        conn.close()
+        return jsonify({'categories': categories}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas pobierania danych kategorii.'}), 500
+
+
 # Endpoint do resetowania hasła
 @app.route('/resetPassword', methods=['POST'])
 def reset_password():
@@ -184,7 +258,6 @@ def reset_password():
             # ...
 
             # Uaktualnij dane użytkownika w bazie danych
-
 
             # Wyślij e-mail z linkiem do resetowania hasła
             # ...
@@ -265,6 +338,7 @@ def change_password():
         conn.rollback()
         conn.close()
         return jsonify({'error': 'Wystąpił błąd podczas zmiany hasła.'}), 500
+
 
 # main
 if __name__ == '__main__':
