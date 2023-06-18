@@ -226,6 +226,69 @@ def loadCategories():
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych kategorii.'}), 500
 
 
+@app.route('/updateCategoryState', methods=['POST'])
+def updateCategoryState():
+
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        # Otrzymujemy dane z żądania POST
+        category_id = request.json['id']
+        new_state = request.json['isAccepted']
+
+        # Połączenie z bazą danych
+        conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+
+        # Aktualizacja stanu kategorii w bazie danych
+        cursor.execute("UPDATE [categories] SET [isAccepted] = ? WHERE [id] = ?", new_state, category_id)
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': 'Stan kategorii został zaktualizowany.'}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
+
+
+@app.route('/deleteCategory/<int:category_id>', methods=['DELETE'])
+def deleteCategory(category_id):
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+
+    try:
+        # Połączenie z bazą danych
+
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+
+        # Usunięcie kategorii z bazy danych
+        cursor.execute("DELETE FROM [categories] WHERE [id] = ?", category_id)
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': 'Kategoria została usunięta.'}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas usuwania kategorii.'}), 500
+
+
+
 # Endpoint do resetowania hasła
 @app.route('/resetPassword', methods=['POST'])
 def reset_password():
