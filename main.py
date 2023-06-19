@@ -1,32 +1,120 @@
 from flask import Flask, request, jsonify
-from db_utils import connect_to_database
-from routes.auth import auth_bp
-
+import pyodbc
+import hashlib
+import base64
 
 app = Flask(__name__)
 
-app.register_blueprint(auth_bp, url_prefix='/auth')
+
+# Funkcja do haszowania hasła
+def HashPassword(password):
+    hashed_bytes = hashlib.sha256(password.encode()).digest()
+    hashed_password = base64.b64encode(hashed_bytes).decode()
+    return hashed_password
+
+
+# Endpoint logowania
+@app.route('/login', methods=['POST'])
+def login():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    # Pobranie danych logowania z żądania POST
+    username_or_email = request.json['username_or_email']
+    password = request.json['password']
+    hashed_password = HashPassword(password)  # Haszowanie hasła
+
+    # Sprawdzenie, czy użytkownik istnieje w bazie danych
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Users WHERE (login=? OR mail=?) AND password=?",
+                   (username_or_email, username_or_email, hashed_password))
+    user = cursor.fetchone()
+
+    conn.close()  # Zamknięcie połączenia z bazą danych
+
+    if user:
+        # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
+        return jsonify({'result': True, 'user.rank': user.rank})
+    else:
+        # Jeśli użytkownik nie istnieje, zwróć błąd 401
+        return jsonify({'result': False}), 401
+
+
+# Endpoint rejestracji
+@app.route('/register', methods=['POST'])
+def register():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+        mail = data['mail']
+        username = data['login']
+        password = data['password']
+        hashed_password = HashPassword(password)  # Haszowanie hasła
+
+        # Sprawdzenie, czy użytkownik o podanym adresie e-mail lub nazwie użytkownika już istnieje
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Users WHERE mail=? OR login=?", (mail, username))
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            # Jeśli użytkownik już istnieje, zwróć błąd 409 (konflikt)
+            return jsonify({'error': 'Użytkownik o podanym adresie e-mail lub nazwie użytkownika już istnieje.'}), 409
+
+        # Dodanie nowego użytkownika do bazy danych
+        cursor.execute("INSERT INTO Users (mail, login, password, rank, isAccepted) VALUES (?, ?, ?, ?, ?)",
+                       (mail, username, hashed_password, 1, 1))
+
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
 
 
 # Endpoint pobierania przepisów
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT r.id, r.isAccepted, r.title, r.imageURL, r.description, r.difficulty, r.avgTime, \
                         r.portions, r.userId, re.noOfList, re.imageURL, re.description FROM [recipes] AS [r] \
-                        INNER JOIN [recipesElements] AS [re] ON r.id = re.recipeId \
-                        WHERE [r].[isAccepted] = 1")
+                        INNER JOIN [recipesElements] AS [re] ON r.id = re.recipeId")
 
         recipes = []
         current_recipe_id = None
         recipe = None
 
         for row in cursor.fetchall():
-            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list,\
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list, \
                 step_image_url, step_description = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
@@ -54,6 +142,7 @@ def loadRecipes():
         if recipe is not None:
             recipes.append(recipe)
 
+        print(recipe)
         conn.close()
         return jsonify({'recipes': recipes}), 200
     except Exception as e:
@@ -66,7 +155,13 @@ def loadRecipes():
 @app.route('/loadUsersToAccept', methods=['GET'])
 def loadUsersToAccept():
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         cursor = conn.cursor()
@@ -95,11 +190,17 @@ def loadUsersToAccept():
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych użytkowników.'}), 500
 
 
-# Endpoint do pobierania kategorii
+#Endpoint do pobierania kategorii
 @app.route('/loadCategories', methods=['GET'])
 def loadCategories():
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         cursor = conn.cursor()
@@ -123,17 +224,26 @@ def loadCategories():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych kategorii.'}), 500
 
-
 @app.route('/updateCategoryState', methods=['POST'])
 def updateCategoryState():
+
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         # Otrzymujemy dane z żądania POST
         category_id = request.json['id']
         new_state = request.json['isAccepted']
 
+        # Połączenie z bazą danych
+        conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+        conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
 
         # Aktualizacja stanu kategorii w bazie danych
@@ -151,11 +261,17 @@ def updateCategoryState():
 @app.route('/deleteCategory/<int:category_id>', methods=['DELETE'])
 def deleteCategory(category_id):
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
 
     try:
         # Połączenie z bazą danych
 
+        conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
 
         # Usunięcie kategorii z bazy danych
@@ -177,7 +293,13 @@ def reset_password():
     email = request.json.get('email')
 
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         cursor = conn.cursor()
@@ -227,7 +349,13 @@ def change_password():
         return jsonify({'error': 'Nowe hasło i potwierdzenie hasła nie są zgodne.'}), 400
 
     # Połączenie z bazą danych
-    conn = connect_to_database()
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
 
     try:
         cursor = conn.cursor()
@@ -270,6 +398,74 @@ def change_password():
         conn.rollback()
         conn.close()
         return jsonify({'error': 'Wystąpił błąd podczas zmiany hasła.'}), 500
+
+
+@app.route('/updateUserAccept', methods=['POST'])
+def updateUserAccept():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+
+        user_id = request.json['id']
+        new_state = request.json['isAccepted']
+
+        # Połączenie z bazą danych
+        conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+
+        # Aktualizacja stanu isAccepted użytkownika
+        cursor.execute("UPDATE [users] SET [isAccepted] = ? WHERE [id] = ?",
+                       new_state, user_id)
+        conn.commit()
+        conn.close()
+        return jsonify({'success': 'Stan YOUR_LOGIN_HEREa został zaktualizowany.'}), 200
+
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
+
+
+@app.route('/updateRecipeState', methods=['POST'])
+def updateRecipeState():
+
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+        # Otrzymujemy dane z żądania POST
+        recipe_id = request.json['id']
+        new_state = request.json['isAccepted']
+
+        # Połączenie z bazą danych
+        conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+
+        # Aktualizacja stanu kategorii w bazie danych
+        cursor.execute("UPDATE [recipes] SET [isAccepted] = ? WHERE [id] = ?", new_state, recipe_id)
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': 'Stan przepisu został zaktualizowany.'}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
 
 
 # main
