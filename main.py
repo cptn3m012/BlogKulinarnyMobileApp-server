@@ -504,6 +504,78 @@ def updateRecipeState():
         return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
 
 
+#Endpoint do dodania komentarza dla admina
+@app.route('/addCommAdmin', methods=['POST'])
+def addCommAdmin():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        message = data['text']
+        rate = data['rate']
+        recipe_id = data['recipe_id']
+        user_id = data['user_id']
+        isb = data['isB']
+
+        # Dodanie nowego komentarza do bazy danych
+        cursor.execute\
+            ("INSERT INTO Comments (Rate,Text, isBlocked, recipeId, userId) VALUES (?, ?, ?, ?, ?)",
+            (rate, message, isb, recipe_id, user_id))
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'comment added': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
+
+
+
+@app.route('/delRecipeAdmin', methods=['POST'])
+def delRecpieAdmin():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        id = data['recipe_id']
+
+        # Usunięcie przepisu z bazy danych
+        cursor.execute("DELETE FROM RECIPES WHERE id = ?", (id,))
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'recipe deleted': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas usuwania przepisu.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
+
+
 # main
 if __name__ == '__main__':
     # Uruchomienie aplikacji Flask z obsługą HTTP
