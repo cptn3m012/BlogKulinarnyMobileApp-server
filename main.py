@@ -91,7 +91,6 @@ def register():
         conn.close()  # Zamknięcie połączenia z bazą danych
 
 
-# Endpoint pobierania przepisów
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
     # Połączenie z bazą danych
@@ -105,20 +104,35 @@ def loadRecipes():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("""SELECT DISTINCT r.id, r.isAccepted, r.title, r.imageURL, r.description, r.difficulty, 
-        r.avgTime, r.portions, r.userId, re.noOfList, re.imageURL AS stepImageURL, re.description AS stepDescription,
-        c.Text AS commentText, c.Rate AS commentRate, cat.name AS categoryName
-        FROM recipes AS r
-        INNER JOIN recipesElements AS re ON r.id = re.recipeId
-        LEFT JOIN (
+        cursor.execute("""
+            SELECT DISTINCT
+                r.id,
+                r.isAccepted,
+                r.title,
+                r.imageURL,
+                r.description,
+                r.difficulty,
+                r.avgTime,
+                r.portions,
+                r.userId,
+                re.noOfList,
+                re.imageURL AS stepImageURL,
+                re.description AS stepDescription,
+                c.Text AS commentText,
+                c.Rate AS commentRate,
+                cat.name AS categoryName
+            FROM
+                recipes AS r
+                INNER JOIN recipesElements AS re ON r.id = re.recipeId
+                LEFT JOIN (
                     SELECT DISTINCT recipeId, Text, Rate
                     FROM comments
-                    ) AS c ON r.id = c.recipeId
-        INNER JOIN (
+                ) AS c ON r.id = c.recipeId
+                INNER JOIN (
                     SELECT DISTINCT recipeId, name
                     FROM recipesCategories AS rc
                     INNER JOIN categories AS cat ON rc.categoryId = cat.id
-                    ) AS cat ON r.id = cat.recipeId
+                ) AS cat ON r.id = cat.recipeId;
         """)
 
         recipes = []
@@ -162,13 +176,15 @@ def loadRecipes():
 
         if recipe is not None:
             recipes.append(recipe)
-
+        print(recipes)
         conn.close()
         return jsonify({'recipes': recipes}), 200
+
     except Exception as e:
         print(e)
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
+
 
 
 # Endpoint pobierania YOUR_LOGIN_HEREow
