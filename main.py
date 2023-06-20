@@ -105,9 +105,21 @@ def loadRecipes():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT r.id, r.isAccepted, r.title, r.imageURL, r.description, r.difficulty, r.avgTime, \
-                        r.portions, r.userId, re.noOfList, re.imageURL, re.description FROM [recipes] AS [r] \
-                        INNER JOIN [recipesElements] AS [re] ON r.id = re.recipeId")
+        cursor.execute("""SELECT DISTINCT r.id, r.isAccepted, r.title, r.imageURL, r.description, r.difficulty, 
+        r.avgTime, r.portions, r.userId, re.noOfList, re.imageURL AS stepImageURL, re.description AS stepDescription,
+        c.Text AS commentText, c.Rate AS commentRate, cat.name AS categoryName
+        FROM recipes AS r
+        INNER JOIN recipesElements AS re ON r.id = re.recipeId
+        LEFT JOIN (
+                    SELECT DISTINCT recipeId, Text, Rate
+                    FROM comments
+                    ) AS c ON r.id = c.recipeId
+        INNER JOIN (
+                    SELECT DISTINCT recipeId, name
+                    FROM recipesCategories AS rc
+                    INNER JOIN categories AS cat ON rc.categoryId = cat.id
+                    ) AS cat ON r.id = cat.recipeId
+        """)
 
         recipes = []
         current_recipe_id = None
@@ -115,7 +127,7 @@ def loadRecipes():
 
         for row in cursor.fetchall():
             recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list, \
-                step_image_url, step_description = row
+                step_image_url, step_description, comment_text, comment_rate, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -130,7 +142,9 @@ def loadRecipes():
                     "avgTime": avg_time,
                     "portions": portions,
                     "userId": user_id,
-                    "steps": []
+                    "steps": [],
+                    "comments": [],
+                    "categories": []
                 }
 
             recipe["steps"].append({
@@ -139,10 +153,16 @@ def loadRecipes():
                 "noOfList": no_of_list
             })
 
+            recipe["comments"].append({
+                "text": comment_text,
+                "rate": comment_rate
+            })
+
+            recipe["categories"].append(category_name)
+
         if recipe is not None:
             recipes.append(recipe)
 
-        print(recipe)
         conn.close()
         return jsonify({'recipes': recipes}), 200
     except Exception as e:
