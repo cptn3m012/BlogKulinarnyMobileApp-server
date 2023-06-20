@@ -105,7 +105,7 @@ def loadRecipes():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT DISTINCT
+            SELECT
                 r.id,
                 r.isAccepted,
                 r.title,
@@ -123,16 +123,36 @@ def loadRecipes():
                 cat.name AS categoryName
             FROM
                 recipes AS r
-                INNER JOIN recipesElements AS re ON r.id = re.recipeId
+                INNER JOIN (
+                    SELECT
+                        recipeId,
+                        MIN(noOfList) AS noOfList,
+                        imageURL,
+                        description
+                    FROM
+                        recipesElements
+                    GROUP BY
+                        recipeId,
+                        imageURL,
+                        description
+                ) AS re ON r.id = re.recipeId
                 LEFT JOIN (
-                    SELECT DISTINCT recipeId, Text, Rate
-                    FROM comments
+                    SELECT DISTINCT
+                        recipeId,
+                        Text,
+                        Rate
+                    FROM
+                        comments
                 ) AS c ON r.id = c.recipeId
                 INNER JOIN (
-                    SELECT DISTINCT recipeId, name
-                    FROM recipesCategories AS rc
-                    INNER JOIN categories AS cat ON rc.categoryId = cat.id
+                    SELECT DISTINCT
+                        recipeId,
+                        name
+                    FROM
+                        recipesCategories AS rc
+                        INNER JOIN categories AS cat ON rc.categoryId = cat.id
                 ) AS cat ON r.id = cat.recipeId;
+
         """)
 
         recipes = []
@@ -161,18 +181,22 @@ def loadRecipes():
                     "categories": []
                 }
 
-            recipe["steps"].append({
-                "imageURL": step_image_url,
-                "description": step_description,
-                "noOfList": no_of_list
-            })
+            if {"imageURL": step_image_url, "description": step_description, "noOfList": no_of_list} not in recipe[
+                "steps"]:
+                recipe["steps"].append({
+                    "imageURL": step_image_url,
+                    "description": step_description,
+                    "noOfList": no_of_list
+                })
 
-            recipe["comments"].append({
-                "text": comment_text,
-                "rate": comment_rate
-            })
+            if {"text": comment_text, "rate": comment_rate} not in recipe["comments"]:
+                recipe["comments"].append({
+                    "text": comment_text,
+                    "rate": comment_rate
+                })
 
-            recipe["categories"].append(category_name)
+            if category_name not in recipe["categories"]:
+                recipe["categories"].append(category_name)
 
         if recipe is not None:
             recipes.append(recipe)
