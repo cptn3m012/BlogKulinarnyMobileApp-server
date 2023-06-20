@@ -40,7 +40,7 @@ def login():
 
     if user:
         # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
-        return jsonify({'result': True, 'user.rank': user.rank})
+        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0]})
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
         return jsonify({'result': False}), 401
