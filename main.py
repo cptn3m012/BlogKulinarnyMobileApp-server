@@ -35,12 +35,11 @@ def login():
     cursor.execute("SELECT * FROM Users WHERE (login=? OR mail=?) AND password=?",
                    (username_or_email, username_or_email, hashed_password))
     user = cursor.fetchone()
-
     conn.close()  # Zamknięcie połączenia z bazą danych
 
     if user:
         # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
-        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0]})
+        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0], 'user.login': user[1]})
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
         return jsonify({'result': False}), 401
@@ -565,8 +564,6 @@ def addCommAdmin():
         return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
     finally:
         conn.close()  # Zamknięcie połączenia z bazą danych
-
-
 
 @app.route('/delRecipeAdmin', methods=['POST'])
 def delRecpieAdmin():
