@@ -39,7 +39,7 @@ def login():
 
     if user:
         # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
-        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0], 'user.login': user[1]})
+        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0], 'user.login': user[1], 'user.mail': user[3]})
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
         return jsonify({'result': False}), 401
@@ -88,6 +88,31 @@ def register():
         return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
     finally:
         conn.close()  # Zamknięcie połączenia z bazą danych
+
+
+@app.route('/update_user', methods=['POST'])
+def update_user():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    # Pobranie danych z żądania POST
+    login = request.json.get('login')
+    mail = request.json.get('mail')
+    user_id = request.json.get('user_id')
+
+    # Zaktualizowanie danych w bazie danych
+    cursor = conn.cursor()
+    cursor.execute("UPDATE Users SET login=?, mail=? WHERE Id=?", (login, mail, user_id))
+    conn.commit()
+    conn.close()  # Zamknięcie połączenia z bazą danych
+
+    return jsonify({'message': 'Dane użytkownika zostały zaktualizowane.'})
 
 
 @app.route('/loadRecipes', methods=['GET'])
