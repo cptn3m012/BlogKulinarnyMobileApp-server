@@ -502,6 +502,42 @@ def updateRecipeState():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
 
+#Endpoint do dodania komentarza przez user'a
+@app.route('/addUserComm', methods=['POST'])
+def addUserComm():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        message = data['text']
+        rate = data['rate']
+        recipe_id = data['recipe_id']
+        user_id = data['user_id']
+
+        # Dodanie nowego komentarza do bazy danych
+        cursor.execute\
+            ("INSERT INTO Comments (Rate,Text, recipeId, userId) VALUES (?, ?, ?, ?)",
+            (rate, message, recipe_id, user_id))
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'comment added': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas tworzenia komentarza.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
 
 #Endpoint do dodania komentarza dla admina
 @app.route('/addCommAdmin', methods=['POST'])
