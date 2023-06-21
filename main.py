@@ -238,8 +238,9 @@ def loadRecipes():
         recipe = None
 
         for row in cursor.fetchall():
-            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, no_of_list, \
-                step_image_url, step_description,  comment_userLogin, comment_userid, comment_text, comment_rate, category_name = row
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
+                no_of_list, step_image_url, step_description,  \
+                comment_userLogin, comment_userid, comment_text, comment_rate, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -254,6 +255,7 @@ def loadRecipes():
                     "avgTime": avg_time,
                     "portions": portions,
                     "userId": user_id,
+                    "u.login": comment_userLogin,
                     "steps": [],
                     "comments": [],
                     "categories": []
