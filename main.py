@@ -142,6 +142,29 @@ def update_password():
     return jsonify({'message': 'Hasło użytkownika zostało zaktualizowane.'})
     conn.close()
 
+@app.route('/delete_account', methods=['POST'])
+def delete_account():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    # Pobranie danych z żądania POST
+    user_id = request.json.get('user_id')
+
+    cursor = conn.cursor()
+
+    # Usunięcie użytkownika z bazy danych
+    cursor.execute("DELETE FROM Users WHERE Id=?", user_id)
+    conn.commit()
+
+    return jsonify({'message': 'Użytkownik został usunięty z bazy danych.'})
+    conn.close()
+
 
 @app.route('/loadRecipes', methods=['GET'])
 def loadRecipes():
