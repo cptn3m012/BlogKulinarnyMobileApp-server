@@ -77,7 +77,7 @@ def register():
 
         # Dodanie nowego użytkownika do bazy danych
         cursor.execute("INSERT INTO Users (mail, login, password, rank, isAccepted) VALUES (?, ?, ?, ?, ?)",
-                       (mail, username, hashed_password, 1, 1))
+                       (mail, username, hashed_password, 0, 0))
 
         conn.commit()
 
@@ -197,6 +197,7 @@ def loadRecipes():
                 c.userId AS usId,
                 c.Text AS commentText,
                 c.Rate AS commentRate,
+                c.[isBlocked] AS isB,
                 cat.name AS categoryName
             FROM
                 recipes AS r
@@ -214,11 +215,8 @@ def loadRecipes():
                         description
                 ) AS re ON r.id = re.recipeId
                 LEFT JOIN (
-                    SELECT DISTINCT
-                        userId,
-                        recipeId,
-                        Text,
-                        Rate
+                    SELECT
+					*
                     FROM
                         comments AS ce
                 ) AS c ON r.id = c.recipeId
@@ -240,7 +238,7 @@ def loadRecipes():
         for row in cursor.fetchall():
             recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
                 no_of_list, step_image_url, step_description,  \
-                comment_userLogin, comment_userid, comment_text, comment_rate, category_name = row
+                comment_userLogin, comment_userid, comment_text, comment_rate, isBlocked, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -281,7 +279,8 @@ def loadRecipes():
                         "usId": comment_userid,
                         "login": comment_userLogin,
                         "text": comment_text,
-                        "rate": comment_rate
+                        "rate": comment_rate,
+                        "isBlocked": isBlocked
                     })
 
             if category_name not in recipe["categories"]:
@@ -297,7 +296,6 @@ def loadRecipes():
         print(e)
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
-
 
 
 # Endpoint pobierania YOUR_LOGIN_HEREow
@@ -337,6 +335,33 @@ def loadUsersToAccept():
         print(e)
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych użytkowników.'}), 500
+
+
+# Endpoint usuwania YOUR_LOGIN_HEREow
+@app.route('/deleteUsersToAccept/<int:user_id>', methods=['DELETE'])
+def deleteUsersToAccept(user_id):
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    log = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={log};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    try:
+
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM [users] WHERE [Id] = ?", (user_id,))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Użytkownik został pomyślnie usunięty.'}), 200
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas usuwania użytkownika.'}), 500
 
 
 #Endpoint do pobierania kategorii
