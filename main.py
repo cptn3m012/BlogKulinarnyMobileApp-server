@@ -195,6 +195,7 @@ def loadRecipes():
                 re.description AS stepDescription,
                 u.login,
                 c.userId AS usId,
+                c.Id AS comment_id,
                 c.Text AS commentText,
                 c.Rate AS commentRate,
                 c.[isBlocked] AS isB,
@@ -238,7 +239,7 @@ def loadRecipes():
         for row in cursor.fetchall():
             recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
                 no_of_list, step_image_url, step_description,  \
-                comment_userLogin, comment_userid, comment_text, comment_rate, isBlocked, category_name = row
+                comment_userLogin, comment_userid, comment_id, comment_text, comment_rate, isBlocked, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
                     recipes.append(recipe)
@@ -277,6 +278,7 @@ def loadRecipes():
                 if comment_text is not None and comment_rate is not None and comment_userid is not None:
                     recipe["comments"].append({
                         "usId": comment_userid,
+                        "comment_id": comment_id,
                         "login": comment_userLogin,
                         "text": comment_text,
                         "rate": comment_rate,
@@ -553,6 +555,39 @@ def addUserComm():
         cursor.execute\
             ("INSERT INTO Comments (Rate,Text, recipeId, userId) VALUES (?, ?, ?, ?)",
             (rate, message, recipe_id, user_id))
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'comment added': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas tworzenia komentarza.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
+
+#Endpoint do dodania komentarza przez user'a
+@app.route('/delUserComm', methods=['POST'])
+def delUserComm():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        id = data["comment_id"]
+
+        # Dodanie nowego komentarza do bazy danych
+        cursor.execute\
+            ("DELETE FROM comments WHERE Id = ?", id)
         conn.commit()
 
         # Zwrócenie odpowiedzi sukcesu
