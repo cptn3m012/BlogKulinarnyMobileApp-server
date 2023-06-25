@@ -589,54 +589,6 @@ def delUserComm():
         recipe_id = data["recipe_id"]
 
         # Dodanie nowego komentarza do bazy danych
-        cursor.execute\
-            ("DELETE FROM comments WHERE Id = ?", id)
-        conn.commit()
-
-        # Zapytanie SELECT dla pobrania wszystkich komentarzy
-        cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
-        rows = []
-        row = cursor.fetchone()
-        while row is not None:
-            rows.append(dict(row))
-            row = cursor.fetchone()
-
-        # Zwrócenie odpowiedzi z usuniętym komentarzem i pobranymi danymi
-        response = {
-            'comment_deleted': True,
-            'comments': rows
-        }
-        # Zwrócenie odpowiedzi sukcesu
-        print(response)
-        return jsonify(response), 200
-    except Exception as e:
-        # Obsługa błędu
-        print(e)
-        return jsonify({'error': 'Wystąpił błąd podczas tworzenia komentarza.'}), 500
-    finally:
-        conn.close()  # Zamknięcie połączenia z bazą danych
-
-#Endpoint do dodania komentarza dla admina
-@app.route('/addCommAdmin', methods=['POST'])
-def addCommAdmin():
-    # Połączenie z bazą danych
-    server = 'YOUR_SERVER_HERE'
-    database = 'YOUR_DATABASE_NAME_HERE'
-    login = 'YOUR_LOGIN_HERE'
-    password = 'YOUR_PASSWORD_HERE'
-    driver = '{ODBC Driver 17 for SQL Server}'
-    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
-
-    try:
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        # Pobranie danych rejestracji z żądania POST
-        data = request.get_json()
-
-        id = data["comment_id"]
-        recipe_id = data["recipe_id"]
-
-        # Dodanie nowego komentarza do bazy danych
         cursor.execute("DELETE FROM comments WHERE Id = ?", id)
         conn.commit()
 
@@ -663,6 +615,44 @@ def addCommAdmin():
     finally:
         if 'conn' in locals() and conn is not None:
             conn.close()  # Zamknięcie połączenia z bazą danych
+
+#Endpoint do dodania komentarza dla admina
+@app.route('/addCommAdmin', methods=['POST'])
+def addCommAdmin():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        message = data['text']
+        rate = data['rate']
+        recipe_id = data['recipe_id']
+        user_id = data['user_id']
+        isb = data['isB']
+
+        # Dodanie nowego komentarza do bazy danych
+        cursor.execute\
+            ("INSERT INTO Comments (Rate,Text, isBlocked, recipeId, userId) VALUES (?, ?, ?, ?, ?)",
+            (rate, message, isb, recipe_id, user_id))
+        conn.commit()
+
+        # Zwrócenie odpowiedzi sukcesu
+        return jsonify({'comment added': True}), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
+    finally:
+        conn.close()  # Zamknięcie połączenia z bazą danych
 
 @app.route('/delRecipeAdmin', methods=['POST'])
 def delRecpieAdmin():
