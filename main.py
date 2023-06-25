@@ -594,16 +594,13 @@ def delUserComm():
 
         # Zapytanie SELECT dla pobrania wszystkich komentarzy
         cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
-        rows = []
-        row = cursor.fetchone()
-        while row is not None:
-            rows.append(dict(row))
-            row = cursor.fetchone()
+        rows = cursor.fetchall()
+        comments = [dict(row) for row in rows]
 
         # Zwrócenie odpowiedzi z usuniętym komentarzem i pobranymi danymi
         response = {
             'comment_deleted': True,
-            'comments': rows
+            'comments': comments
         }
         # Zwrócenie odpowiedzi sukcesu
         print(response)
