@@ -566,6 +566,7 @@ def addUserComm():
     finally:
         conn.close()  # Zamknięcie połączenia z bazą danych
 
+
 #Endpoint do dodania komentarza przez user'a
 @app.route('/delUserComm', methods=['POST'])
 def delUserComm():
@@ -584,14 +585,26 @@ def delUserComm():
         data = request.get_json()
 
         id = data["comment_id"]
+        recipe_id = data["recipe_id"]
 
         # Dodanie nowego komentarza do bazy danych
         cursor.execute\
             ("DELETE FROM comments WHERE Id = ?", id)
         conn.commit()
 
+        # Zapytanie SELECT dla pobrania wszystkich komentarzy
+        cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
+        rows = cursor.fetchall()
+
+        # Zwrócenie odpowiedzi z usuniętym komentarzem i pobranymi danymi
+        response = {
+            'comment_deleted': True,
+            'comments': [dict(row) for row in rows]
+        }
         # Zwrócenie odpowiedzi sukcesu
-        return jsonify({'comment added': True}), 200
+        #return jsonify({'comment added': True}), 200
+        print(response)
+        return jsonify(response), 200
     except Exception as e:
         # Obsługa błędu
         print(e)
