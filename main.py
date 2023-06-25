@@ -595,7 +595,12 @@ def delUserComm():
         # Zapytanie SELECT dla pobrania wszystkich komentarzy
         cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
         rows = cursor.fetchall()
-        comments = [dict(row) for row in rows]
+
+        # Pobranie nazw kolumn
+        columns = [column[0] for column in cursor.description]
+
+        # Konwersja wyników zapytania na listę słowników
+        comments = [dict(zip(columns, row)) for row in rows]
 
         # Zwrócenie odpowiedzi z usuniętym komentarzem i pobranymi danymi
         response = {
