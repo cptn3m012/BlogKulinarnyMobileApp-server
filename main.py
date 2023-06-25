@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import pyodbc
 import hashlib
 import base64
+import json
 
 app = Flask(__name__)
 
@@ -594,15 +595,18 @@ def delUserComm():
 
         # Zapytanie SELECT dla pobrania wszystkich komentarzy
         cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
-        rows = cursor.fetchall()
+        rows = []
+        row = cursor.fetchone()
+        while row is not None:
+            rows.append(dict(row))
+            row = cursor.fetchone()
 
         # Zwrócenie odpowiedzi z usuniętym komentarzem i pobranymi danymi
         response = {
             'comment_deleted': True,
-            'comments': [dict(row) for row in rows]
+            'comments': rows
         }
         # Zwrócenie odpowiedzi sukcesu
-        #return jsonify({'comment added': True}), 200
         print(response)
         return jsonify(response), 200
     except Exception as e:
