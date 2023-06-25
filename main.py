@@ -143,6 +143,7 @@ def update_password():
     return jsonify({'message': 'Hasło użytkownika zostało zaktualizowane.'})
     conn.close()
 
+
 @app.route('/delete_account', methods=['POST'])
 def delete_account():
     # Połączenie z bazą danych
@@ -239,7 +240,7 @@ def loadRecipes():
 
         for row in cursor.fetchall():
             recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
-                no_of_list, step_image_url, step_description,  \
+                no_of_list, step_image_url, step_description, \
                 comment_userLogin, comment_userid, comment_id, comment_text, comment_rate, isBlocked, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
@@ -261,7 +262,8 @@ def loadRecipes():
                     "categories": []
                 }
 
-            if {"imageURL": step_image_url, "description": step_description, "noOfList": no_of_list} not in recipe["steps"]:
+            if {"imageURL": step_image_url, "description": step_description, "noOfList": no_of_list} not in recipe[
+                "steps"]:
                 recipe["steps"].append({
                     "imageURL": step_image_url,
                     "description": step_description,
@@ -271,7 +273,8 @@ def loadRecipes():
             # Check for duplicate comments
             duplicate_comment = False
             for comment in recipe["comments"]:
-                if comment["usId"] == comment_userid and comment["text"] == comment_text and comment["rate"] == comment_rate:
+                if comment["usId"] == comment_userid and comment["text"] == comment_text and comment[
+                    "rate"] == comment_rate:
                     duplicate_comment = True
                     break
 
@@ -367,7 +370,7 @@ def deleteUsersToAccept(user_id):
         return jsonify({'error': 'Wystąpił błąd podczas usuwania użytkownika.'}), 500
 
 
-#Endpoint do pobierania kategorii
+# Endpoint do pobierania kategorii
 @app.route('/loadCategories', methods=['GET'])
 def loadCategories():
     # Połączenie z bazą danych
@@ -401,9 +404,9 @@ def loadCategories():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych kategorii.'}), 500
 
+
 @app.route('/updateCategoryState', methods=['POST'])
 def updateCategoryState():
-
     # Połączenie z bazą danych
     server = 'YOUR_SERVER_HERE'
     database = 'YOUR_DATABASE_NAME_HERE'
@@ -499,7 +502,6 @@ def updateUserAccept():
 
 @app.route('/updateRecipeState', methods=['POST'])
 def updateRecipeState():
-
     # Połączenie z bazą danych
     server = 'YOUR_SERVER_HERE'
     database = 'YOUR_DATABASE_NAME_HERE'
@@ -530,7 +532,8 @@ def updateRecipeState():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
 
-#Endpoint do dodania komentarza przez user'a
+
+# Endpoint do dodania komentarza przez user'a
 @app.route('/addUserComm', methods=['POST'])
 def addUserComm():
     # Połączenie z bazą danych
@@ -553,22 +556,38 @@ def addUserComm():
         user_id = data['user_id']
 
         # Dodanie nowego komentarza do bazy danych
-        cursor.execute\
-            ("INSERT INTO Comments (Rate,Text, recipeId, userId) VALUES (?, ?, ?, ?)",
-            (rate, message, recipe_id, user_id))
+        cursor.execute("INSERT INTO Comments (Rate,Text, recipeId, userId) VALUES (?, ?, ?, ?)",
+                       (rate, message, recipe_id, user_id))
         conn.commit()
 
-        # Zwrócenie odpowiedzi sukcesu
-        return jsonify({'comment added': True}), 200
+        cursor.execute("""
+                   SELECT c.*, u.login
+                   FROM comments c
+                   INNER JOIN users u ON c.userId = u.Id
+                   WHERE c.recipeId = ?""", recipe_id)
+        rows = cursor.fetchall()
+
+        columns = [column[0] for column in cursor.description]
+
+        comments = [dict(zip(columns, row)) for row in rows]
+
+        response = {
+            'comment_added': True,
+            'comments': comments
+        }
+
+        # Return success response
+        return jsonify(response), 200
     except Exception as e:
         # Obsługa błędu
         print(e)
         return jsonify({'error': 'Wystąpił błąd podczas tworzenia komentarza.'}), 500
     finally:
-        conn.close()  # Zamknięcie połączenia z bazą danych
+        if conn:
+            conn.close() # Zamknięcie połączenia z bazą danych
 
 
-#Endpoint do dodania komentarza przez user'a
+# Endpoint do dodania komentarza przez user'a
 @app.route('/delUserComm', methods=['POST'])
 def delUserComm():
     # Połączenie z bazą danych
@@ -619,7 +638,8 @@ def delUserComm():
         if 'conn' in locals() and conn is not None:
             conn.close()  # Zamknięcie połączenia z bazą danych
 
-#Endpoint do dodania komentarza dla admina
+
+# Endpoint do dodania komentarza dla admina
 @app.route('/addCommAdmin', methods=['POST'])
 def addCommAdmin():
     # Połączenie z bazą danych
@@ -643,9 +663,9 @@ def addCommAdmin():
         isb = data['isB']
 
         # Dodanie nowego komentarza do bazy danych
-        cursor.execute\
+        cursor.execute \
             ("INSERT INTO Comments (Rate,Text, isBlocked, recipeId, userId) VALUES (?, ?, ?, ?, ?)",
-            (rate, message, isb, recipe_id, user_id))
+             (rate, message, isb, recipe_id, user_id))
         conn.commit()
 
         # Zwrócenie odpowiedzi sukcesu
@@ -656,6 +676,7 @@ def addCommAdmin():
         return jsonify({'error': 'Wystąpił błąd podczas rejestracji.'}), 500
     finally:
         conn.close()  # Zamknięcie połączenia z bazą danych
+
 
 @app.route('/delRecipeAdmin', methods=['POST'])
 def delRecpieAdmin():
