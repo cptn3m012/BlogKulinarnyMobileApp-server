@@ -593,7 +593,8 @@ def delUserComm():
         conn.commit()
 
         # Zapytanie SELECT dla pobrania wszystkich komentarzy
-        cursor.execute("SELECT * FROM comments WHERE [recipeId] = ?", recipe_id)
+        cursor.execute("SELECT c.*, u.login FROM comments c INNER JOIN users u ON c.userId = u.Id WHERE c.recipeId = ?"
+                       , recipe_id)
         rows = cursor.fetchall()
 
         # Pobranie nazw kolumn
