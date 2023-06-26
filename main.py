@@ -108,6 +108,21 @@ def update_user():
     mail = request.json.get('mail')
     user_id = request.json.get('user_id')
 
+    # Sprawdzenie czy użytkownik o podanym mailu już istnieje
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Users WHERE mail = ? AND Id != ?", (mail, user_id))
+    count = cursor.fetchone()[0]
+
+    if count > 0:
+        return jsonify({'message': 'Użytkownik o podanym mailu już istnieje.'}), 400
+
+    # Sprawdzenie czy użytkownik o podanym loginie już istnieje
+    cursor.execute("SELECT COUNT(*) FROM Users WHERE login = ? AND Id != ?", (login, user_id))
+    count = cursor.fetchone()[0]
+
+    if count > 0:
+        return jsonify({'message': 'Użytkownik o podanym loginie już istnieje.'}), 400
+
     # Zaktualizowanie danych w bazie danych
     cursor = conn.cursor()
     cursor.execute("UPDATE Users SET login=?, mail=? WHERE Id=?", (login, mail, user_id))
