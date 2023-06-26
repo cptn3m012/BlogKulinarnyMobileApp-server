@@ -342,6 +342,146 @@ def loadRecipes():
         return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
 
 
+@app.route('/loadRecipesForLoggedUser', methods=['POST'])
+def loadRecipesForLoggedUser():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+    conn = pyodbc.connect(conn_str)
+
+    # Pobranie identyfikatora użytkownika z danych przesłanych przez klienta
+    user_id = request.json['user_id']
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                r.id AS recipeIdentifier,
+                r.isAccepted,
+                r.title,
+                r.imageURL,
+                r.description,
+                r.difficulty,
+                r.avgTime,
+                r.portions,
+                r.userId,
+                re.noOfList,
+                uc.login AS kupa,
+                re.imageURL AS stepImageURL,
+                re.description AS stepDescription,
+                u.login,
+                c.userId AS usId,
+                c.Id AS comment_id,
+                c.Text AS commentText,
+                c.Rate AS commentRate,
+                c.[isBlocked] AS isB,
+                cat.name AS categoryName
+            FROM
+                recipes AS r
+                INNER JOIN (
+                    SELECT
+                        recipeId,
+                        MIN(noOfList) AS noOfList,
+                        imageURL,
+                        description
+                    FROM
+                        recipesElements
+                    GROUP BY
+                        recipeId,
+                        imageURL,
+                        description
+                ) AS re ON r.id = re.recipeId
+                LEFT JOIN (
+                    SELECT
+					*
+                    FROM
+                        comments AS ce
+                ) AS c ON r.id = c.recipeId
+                LEFT JOIN users AS uc ON c.userId = uc.[Id]
+                INNER JOIN (
+                    SELECT
+                        recipeId,
+                        name
+                    FROM
+                        recipesCategories AS rc
+                        INNER JOIN categories AS cat ON rc.categoryId = cat.id
+                ) AS cat ON r.id = cat.recipeId
+                INNER JOIN users AS u ON r.userId = u.[Id] WHERE u.Id = ?;
+        """, (user_id,))
+
+        recipes = []
+        current_recipe_id = None
+        recipe = None
+
+        for row in cursor.fetchall():
+            recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
+                no_of_list, author_login, step_image_url, step_description, \
+                comment_userLogin, comment_userid, comment_id, comment_text, comment_rate, isBlocked, category_name = row
+            if recipe_id != current_recipe_id:
+                if recipe is not None:
+                    recipes.append(recipe)
+                current_recipe_id = recipe_id
+                recipe = {
+                    "recipeIdentifier": recipe_id,
+                    "isAccepted": is_accepted,
+                    "title": title,
+                    "imageURL": image_url,
+                    "description": description,
+                    "difficulty": difficulty,
+                    "avgTime": avg_time,
+                    "portions": portions,
+                    "userId": user_id,
+                    "u.login": comment_userLogin,
+                    "steps": [],
+                    "comments": [],
+                    "categories": []
+                }
+
+            if {"imageURL": step_image_url, "description": step_description, "noOfList": no_of_list} not in recipe[
+                "steps"]:
+                recipe["steps"].append({
+                    "imageURL": step_image_url,
+                    "description": step_description,
+                    "noOfList": no_of_list
+                })
+
+            # Check for duplicate comments
+            duplicate_comment = False
+            for comment in recipe["comments"]:
+                if comment["usId"] == comment_userid and comment["text"] == comment_text and comment["rate"] == comment_rate:
+                    duplicate_comment = True
+                    break
+
+            if not duplicate_comment:
+                if comment_text is not None and comment_rate is not None and comment_userid is not None:
+                    recipe["comments"].append({
+                        "usId": comment_userid,
+                        "comment_id": comment_id,
+                        "login": author_login,
+                        "text": comment_text,
+                        "rate": comment_rate,
+                        "isBlocked": isBlocked
+                    })
+
+            if category_name not in recipe["categories"]:
+                recipe["categories"].append(category_name)
+
+        if recipe is not None:
+            recipes.append(recipe)
+        print(recipes)
+        conn.close()
+        return jsonify({'recipes': recipes}), 200
+
+    except Exception as e:
+        print(e)
+        conn.rollback()
+        return jsonify({'error': 'Wystąpił błąd podczas pobierania przepisów.'}), 500
+
+
 # Endpoint pobierania YOUR_LOGIN_HEREow
 @app.route('/loadUsersToAccept', methods=['GET'])
 def loadUsersToAccept():
