@@ -230,6 +230,7 @@ def loadRecipes():
                 r.portions,
                 r.userId,
                 re.noOfList,
+                uc.login AS kupa,
                 re.imageURL AS stepImageURL,
                 re.description AS stepDescription,
                 u.login,
@@ -260,6 +261,7 @@ def loadRecipes():
                     FROM
                         comments AS ce
                 ) AS c ON r.id = c.recipeId
+                LEFT JOIN users AS uc ON c.userId = uc.[Id]
                 INNER JOIN (
                     SELECT
                         recipeId,
@@ -277,7 +279,7 @@ def loadRecipes():
 
         for row in cursor.fetchall():
             recipe_id, is_accepted, title, image_url, description, difficulty, avg_time, portions, user_id, \
-                no_of_list, step_image_url, step_description, \
+                no_of_list, author_login, step_image_url, step_description, \
                 comment_userLogin, comment_userid, comment_id, comment_text, comment_rate, isBlocked, category_name = row
             if recipe_id != current_recipe_id:
                 if recipe is not None:
@@ -310,8 +312,7 @@ def loadRecipes():
             # Check for duplicate comments
             duplicate_comment = False
             for comment in recipe["comments"]:
-                if comment["usId"] == comment_userid and comment["text"] == comment_text and comment[
-                    "rate"] == comment_rate:
+                if comment["usId"] == comment_userid and comment["text"] == comment_text and comment["rate"] == comment_rate:
                     duplicate_comment = True
                     break
 
@@ -320,7 +321,7 @@ def loadRecipes():
                     recipe["comments"].append({
                         "usId": comment_userid,
                         "comment_id": comment_id,
-                        "login": comment_userLogin,
+                        "login": author_login,
                         "text": comment_text,
                         "rate": comment_rate,
                         "isBlocked": isBlocked
