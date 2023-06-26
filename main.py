@@ -157,15 +157,25 @@ def delete_account():
 
     # Pobranie danych z żądania POST
     user_id = request.json.get('user_id')
+    password = request.json.get('password')
 
     cursor = conn.cursor()
+
+    # Sprawdzenie, czy podane hasło zgadza się z hasłem w bazie danych
+    cursor.execute("SELECT password FROM Users WHERE Id=?", user_id)
+    row = cursor.fetchone()
+    if row:
+        stored_password = row.password
+        hashed_passwrod = HashPassword(password)
+        if hashed_passwrod != stored_password:
+            return jsonify({'error': 'Podano złe hasło!'}), 400
 
     # Usunięcie użytkownika z bazy danych
     cursor.execute("DELETE FROM Users WHERE Id=?", user_id)
     conn.commit()
-
-    return jsonify({'message': 'Użytkownik został usunięty z bazy danych.'})
     conn.close()
+
+    return jsonify({'message': 'Użytkownik został usunięty z bazy danych.'}), 200
 
 
 @app.route('/loadRecipes', methods=['GET'])
