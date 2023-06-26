@@ -135,6 +135,18 @@ def update_password():
 
     cursor = conn.cursor()
 
+    # Pobranie hasła z bazy danych
+    cursor.execute("SELECT [password] FROM [dbo].[users] WHERE [Id] = ?", user_id)
+    row = cursor.fetchone()
+    if row is None:
+        return jsonify({'message': 'Użytkownik o podanym identyfikatorze nie istnieje.'}), 400
+
+    hashed_old_password = HashPassword(old_password)
+    password = row[0]
+
+    if hashed_old_password != password:
+        return jsonify({'message': 'Podane stare hasło jest nieprawidłowe.'}), 400
+
     # Zaktualizowanie hasła w bazie danych
     hashed_new_password = HashPassword(new_password)
     cursor.execute("UPDATE Users SET password=? WHERE Id=?", (hashed_new_password, user_id))
