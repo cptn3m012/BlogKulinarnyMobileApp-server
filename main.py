@@ -615,7 +615,6 @@ def updateCategoryState():
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas aktualizacji stanu kategorii.'}), 500
 
-
 @app.route('/deleteCategory/<int:category_id>', methods=['DELETE'])
 def deleteCategory(category_id):
     # Połączenie z bazą danych
@@ -642,6 +641,39 @@ def deleteCategory(category_id):
         print(e)
         conn.rollback()
         return jsonify({'error': 'Wystąpił błąd podczas usuwania kategorii.'}), 500
+
+@app.route('/addCategory', methods=['POST'])
+def addCategory():
+    # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
+
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        # Pobranie danych rejestracji z żądania POST
+        data = request.get_json()
+
+        name = data['name']
+
+        # Dodanie nowego komentarza do bazy danych
+        cursor.execute("INSERT INTO categories (name, isAccepted) VALUES (?,?)",
+                       (name, 0))
+        conn.commit()
+
+        # Return success response
+        return jsonify(), 200
+    except Exception as e:
+        # Obsługa błędu
+        print(e)
+        return jsonify({'error': 'Wystąpił błąd podczas tworzenia komentarza.'}), 500
+    finally:
+        if conn:
+            conn.close() # Zamknięcie połączenia z bazą danych
 
 
 @app.route('/updateUserAccept', methods=['POST'])
