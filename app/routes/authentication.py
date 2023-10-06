@@ -1,11 +1,12 @@
-from flask import Blueprint, jsonify, request
-from db_utils import connect_to_database
-from password_utils import HashPassword
+from flask import request, jsonify, Blueprint
+from app.utils.database import connect_to_database
+from app.utils.hashing import HashPassword
 
-auth_bp = Blueprint('auth', __name__)
+
+bp = Blueprint('authentication', __name__)
 
 # Endpoint logowania
-@auth_bp.route('/login', methods=['POST'])
+@bp.route('/login', methods=['POST'])
 def login():
     # Połączenie z bazą danych
     conn = connect_to_database()
@@ -20,22 +21,27 @@ def login():
     cursor.execute("SELECT * FROM Users WHERE (login=? OR mail=?) AND password=?",
                    (username_or_email, username_or_email, hashed_password))
     user = cursor.fetchone()
-
     conn.close()  # Zamknięcie połączenia z bazą danych
 
     if user:
         # Jeśli użytkownik istnieje, zwróć poprawną odpowiedź JSON
-        return jsonify({'result': True, 'user.rank': user.rank})
+        return jsonify({'result': True, 'user.rank': user[5], 'user.id': user[0], 'user.login': user[1],
+                        'user.mail': user[3], 'user.password': user[2]})
     else:
         # Jeśli użytkownik nie istnieje, zwróć błąd 401
         return jsonify({'result': False}), 401
 
 
 # Endpoint rejestracji
-
-@auth_bp.route('/register', methods=['POST'])
+@bp.route('/register', methods=['POST'])
 def register():
     # Połączenie z bazą danych
+    server = 'YOUR_SERVER_HERE'
+    database = 'YOUR_DATABASE_NAME_HERE'
+    login = 'YOUR_LOGIN_HERE'
+    password = 'YOUR_PASSWORD_HERE'
+    driver = '{ODBC Driver 17 for SQL Server}'
+    conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
     conn = connect_to_database()
 
     try:
@@ -57,7 +63,7 @@ def register():
 
         # Dodanie nowego użytkownika do bazy danych
         cursor.execute("INSERT INTO Users (mail, login, password, rank, isAccepted) VALUES (?, ?, ?, ?, ?)",
-                       (mail, username, hashed_password, 1, 1))
+                       (mail, username, hashed_password, 0, 0))
 
         conn.commit()
 
