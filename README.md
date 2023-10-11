@@ -3,14 +3,27 @@
 ## Overview
 This repository contains the server-side code for the "BlogKulinarnyMobileApp" - a culinary blog mobile application. The server is implemented using Flask and provides various endpoints for user authentication, recipe management, comments, and more. This server acts as the backend for the [BlogKulinarnyMobileApp-client](https://github.com/cptn3m012/BlogKulinarnyMobileApp-client), handling data storage, user requests, and serving content to the client. The client-side application communicates with this server to fetch and display content, post new recipes, manage user accounts, and facilitate interactions between users.
 
-
-
 ## Features
-* **User Authentication**: Secure user registration and login functionality.
-* **Recipe Management**: Add, update, and delete recipes. Retrieve a list of all recipes or details of a specific recipe.
-* **Comments**: Users can add comments to recipes.
-* **Categories**: Manage different categories for recipes.
-* **User Management**: Admin functionalities to manage users.
+
+### Administrator Panel:
+- **Recipe Oversight**: View all recipes and have the ability to lock or unlock specific ones.
+- **Feedback Mechanism**: Provide comments and feedback regarding the decision to lock specific recipes.
+- **User Account Management**: Approve or delete newly registered accounts.
+- **Category Management**: Add new categories, block or unblock existing ones, and delete categories as needed.
+- **Comprehensive Access**: Administrators can access all functionalities available in the user panel.
+
+### User Panel:
+- **Profile Customization**: Users can change their avatars, modify their email addresses, and update their usernames.
+- **Security**: Update passwords for enhanced security.
+- **Account Management**: Option to delete the user account.
+- **Personal Recipe View**: Users can view their personal recipes, both those that are locked and those that are unlocked.
+
+### General Panel:
+- **User Authentication**: Features for user login and registration.
+- **Recipe Browsing**: View a list of all approved recipes and access a detailed view of any specific recipe.
+- **Recipe Search**: Filter and search for recipes based on various criteria.
+
+
 
 ## Extension:
 * Restful: [Flask-RESTful](http://flask-restplus.readthedocs.io/en/stable/)
@@ -51,8 +64,8 @@ Before running the server, you need to configure the database connection. Open t
  ```
 $ flask run
 ```
-After following these steps, the server should be up and running locally on your machine. Make sure to check the client-side application [BlogKulinarnyMobileApp-client](https://github.com/cptn3m012/BlogKulinarnyMobileApp-client) for the complete experience.
+After following these steps, the server should be up and running locally on your machine. To get the full experience, you need to configure the client-side project [BlogKulinarnyMobileApp-client](https://github.com/cptn3m012/BlogKulinarnyMobileApp-client).
+
 
 ## License
-
-_For more info, please refer to the [Documentation](https://github.com/cptn3m012/BlogKulinarnyMobileApp-server/blob/master/Dokumentacja%20PUM.pdf)_
+This project is open-source. 
