@@ -36,10 +36,10 @@ def login():
 @bp.route('/register', methods=['POST'])
 def register():
     # Połączenie z bazą danych
-    server = 'YOUR_SERVER_HERE'
-    database = 'YOUR_DATABASE_NAME_HERE'
-    login = 'YOUR_LOGIN_HERE'
-    password = 'YOUR_PASSWORD_HERE'
+    server = 'sqldemodesi.database.windows.net'
+    database = 'applicationDB'
+    login = 'uzytkownik'
+    password = 'hasloBazy123!'
     driver = '{ODBC Driver 17 for SQL Server}'
     conn_str = f"DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={login};PWD={password}"
     conn = connect_to_database()

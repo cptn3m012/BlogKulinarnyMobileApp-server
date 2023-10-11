@@ -102,7 +102,7 @@ def delete_account():
     return jsonify({'message': 'Użytkownik został usunięty z bazy danych.'}), 200
 
 
-# Endpoint pobierania YOUR_LOGIN_HEREow
+# Endpoint pobierania uzytkownikow
 @bp.route('/loadUsersToAccept', methods=['GET'])
 def loadUsersToAccept():
     # Połączenie z bazą danych
@@ -135,7 +135,7 @@ def loadUsersToAccept():
         return jsonify({'error': 'Wystąpił błąd podczas pobierania danych użytkowników.'}), 500
 
 
-# Endpoint usuwania YOUR_LOGIN_HEREow
+# Endpoint usuwania uzytkownikow
 @bp.route('/deleteUsersToAccept/<int:user_id>', methods=['DELETE'])
 def deleteUsersToAccept(user_id):
     # Połączenie z bazą danych
@@ -176,7 +176,7 @@ def updateUserAccept():
                        new_state, user_id)
         conn.commit()
         conn.close()
-        return jsonify({'success': 'Stan YOUR_LOGIN_HEREa został zaktualizowany.'}), 200
+        return jsonify({'success': 'Stan uzytkownika został zaktualizowany.'}), 200
 
     except Exception as e:
         print(e)
