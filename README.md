@@ -68,4 +68,4 @@ After following these steps, the server should be up and running locally on your
 
 
 ## License
-This project is open-source. 
+This application is on MIT License.
